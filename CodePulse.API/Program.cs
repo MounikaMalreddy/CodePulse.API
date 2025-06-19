@@ -15,6 +15,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<CodePulse.API.Data.CodePulseDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CodePulseConnectionString")));
 builder.Services.AddScoped<ICategoryRepository,CategoryRepository>();
+builder.Services.AddScoped<IBlogPostRepository, BlogPostRepository>();
+
 builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 builder.Services.AddCors(options =>
 {
