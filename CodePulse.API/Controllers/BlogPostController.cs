@@ -13,58 +13,96 @@ namespace CodePulse.API.Controllers
     {
         private readonly IBlogPostRepository blogPostRepository;
         private readonly IMapper _mapper;
+        private readonly ILogger<BlogPostController> _logger;
 
-        public BlogPostController(IBlogPostRepository blogPostRepository, IMapper mapper)
+        public BlogPostController(IBlogPostRepository blogPostRepository, IMapper mapper,
+            ILogger<BlogPostController> logger)
         {
             this.blogPostRepository = blogPostRepository;
             this._mapper = mapper;
+            this._logger = logger;
         }
 
         [HttpGet("GetAllBlogPosts")]
         public async Task<IActionResult> GetAllBlogPosts()
         {
+            _logger.LogInformation("GetAllBlogPosts action invoked.");
             var blogPostDomain = await blogPostRepository.GetAllBlogPostsAsync();
             if (blogPostDomain is null || !blogPostDomain.Any())
+            {
+                _logger.LogWarning("No blog posts found.");
                 return NotFound("No blog posts found.");
+            }
+            _logger.LogInformation("Returning {Count} blog posts.", blogPostDomain.Count());
             return Ok(_mapper.Map<IEnumerable<BlogPostDto>>(blogPostDomain));
         }
+
         [HttpGet("GetBlogPostById/{id}")]
         public async Task<IActionResult> GetBlogPostById([FromRoute] Guid id)
         {
+            _logger.LogInformation("GetBlogPostById action invoked with ID: {Id}", id);
             var blogPostDomain = await blogPostRepository.GetBlogPostByIdAsync(id);
             if (blogPostDomain is null)
+            {
+                _logger.LogWarning("Blog post not found with ID: {Id}", id);
                 return NotFound($"Blog post with ID {id} not found.");
+            }
+            _logger.LogInformation("Blog post retrieved: {@BlogPost}", blogPostDomain);
             return Ok(_mapper.Map<BlogPostDto>(blogPostDomain));
         }
+
         [HttpPost("AddBlogPost")]
         public async Task<IActionResult> AddBlogPost([FromBody] AddBlogPostRequestDto request)
         {
+            _logger.LogInformation("AddBlogPost action invoked with request: {@Request}", request);
             if (request is null)
+            {
+                _logger.LogWarning("Request is null in AddBlogPost.");
                 return BadRequest("Blog post cannot be null.");
+            }
+
             var blogPostDomain = _mapper.Map<BlogPost>(request);
             var addedBlogPost = await blogPostRepository.AddBlogPostAsync(blogPostDomain);
             var blogPostDto = _mapper.Map<BlogPostDto>(addedBlogPost);
+            _logger.LogInformation("Blog post added successfully: {@BlogPost}", blogPostDto);
             return CreatedAtAction(nameof(GetBlogPostById), new { id = blogPostDto.Id }, blogPostDto);
         }
+
         [HttpPut("UpdateBlogPostById/{id}")]
         public async Task<IActionResult> UpdateBlogPostById([FromRoute] Guid id, [FromBody] AddBlogPostRequestDto request)
         {
+            _logger.LogInformation("UpdateBlogPostById action invoked for ID: {Id}", id);
             if (request is null || id == Guid.Empty)
+            {
+                _logger.LogWarning("Request or ID is invalid in UpdateBlogPostById.");
                 return BadRequest("Blog post request and ID cannot be null.");
+            }
+
             var blogPostDomain = _mapper.Map<BlogPost>(request);
             blogPostDomain.Id = id;
             var updatedBlogPost = await blogPostRepository.UpdateBlogPostAsync(blogPostDomain);
             if (updatedBlogPost is null)
+            {
+                _logger.LogWarning("Blog post not found with ID: {Id}", id);
                 return NotFound($"Blog post with ID {id} not found.");
+            }
+            _logger.LogInformation("Blog post updated successfully: {@BlogPost}", updatedBlogPost);
             return Ok(_mapper.Map<BlogPostDto>(updatedBlogPost));
         }
+
         [HttpDelete("DeleteBlogPostById/{id}")]
         public async Task<IActionResult> DeleteBlogPostById([FromRoute] Guid id)
         {
+            _logger.LogInformation("DeleteBlogPostById action invoked with ID: {Id}", id);
             var deletedBlogPost = await blogPostRepository.DeleteBlogPostAsync(id);
             if (deletedBlogPost is null)
+            {
+                _logger.LogWarning("Blog post not found for deletion with ID: {Id}", id);
                 return NotFound($"Blog post with ID {id} not found.");
+            }
+            _logger.LogInformation("Blog post deleted successfully: {@BlogPost}", deletedBlogPost);
             return Ok(_mapper.Map<BlogPostDto>(deletedBlogPost));
         }
+
     }
 }
