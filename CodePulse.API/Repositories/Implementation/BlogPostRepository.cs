@@ -29,7 +29,7 @@ namespace CodePulse.API.Repositories.Implementation
         public async Task<BlogPost?> DeleteBlogPostAsync(Guid id)
         {
             _logger.LogInformation("DeleteBlogPostAsync invoked with ID: {Id}", id);
-            var existingBlogPost = await codePulseDbContext.BlogPost.FirstOrDefaultAsync(x => x.Id == id);
+            var existingBlogPost = await codePulseDbContext.BlogPost.Include(x=>x.Categories).FirstOrDefaultAsync(x => x.Id == id);
             if (existingBlogPost is null)
             {
                 _logger.LogWarning("No BlogPost found with ID: {Id}", id);
@@ -44,7 +44,7 @@ namespace CodePulse.API.Repositories.Implementation
         public async Task<IEnumerable<BlogPost>> GetAllBlogPostsAsync()
         {
             _logger.LogInformation("GetAllBlogPostsAsync invoked.");
-            var posts = await codePulseDbContext.BlogPost.ToListAsync();
+            var posts = await codePulseDbContext.BlogPost.Include(x=>x.Categories).ToListAsync();
             _logger.LogInformation("Retrieved {Count} blog posts.", posts.Count);
             return posts;
         }
@@ -52,7 +52,7 @@ namespace CodePulse.API.Repositories.Implementation
         public async Task<BlogPost?> GetBlogPostByIdAsync(Guid id)
         {
             _logger.LogInformation("GetBlogPostByIdAsync invoked with ID: {Id}", id);
-            var post = await codePulseDbContext.BlogPost.FirstOrDefaultAsync(x => x.Id == id);
+            var post = await codePulseDbContext.BlogPost.Include(x=>x.Categories).FirstOrDefaultAsync(x => x.Id == id);
             if (post == null)
                 _logger.LogWarning("BlogPost not found for ID: {Id}", id);
             return post;
@@ -61,12 +61,13 @@ namespace CodePulse.API.Repositories.Implementation
         public async Task<BlogPost?> UpdateBlogPostAsync(BlogPost blogPost)
         {
             _logger.LogInformation("UpdateBlogPostAsync invoked with data: {@blogPost}", blogPost);
-            var existingBlogPost = await codePulseDbContext.BlogPost.FirstOrDefaultAsync(x => x.Id == blogPost.Id);
+            var existingBlogPost = await codePulseDbContext.BlogPost.Include(x=>x.Categories).FirstOrDefaultAsync(x => x.Id == blogPost.Id);
             if (existingBlogPost is null)
             {
                 _logger.LogWarning("No BlogPost found with ID: {Id}", blogPost.Id);
                 return null;
             }
+            existingBlogPost.Categories = blogPost.Categories;
             codePulseDbContext.Entry(existingBlogPost).CurrentValues.SetValues(blogPost);
             await codePulseDbContext.SaveChangesAsync();
             _logger.LogInformation("BlogPost updated successfully with ID: {Id}", blogPost.Id);

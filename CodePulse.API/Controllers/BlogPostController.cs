@@ -14,13 +14,15 @@ namespace CodePulse.API.Controllers
         private readonly IBlogPostRepository blogPostRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<BlogPostController> _logger;
+        private readonly ICategoryRepository categoryRepository;
 
         public BlogPostController(IBlogPostRepository blogPostRepository, IMapper mapper,
-            ILogger<BlogPostController> logger)
+            ILogger<BlogPostController> logger, ICategoryRepository categoryRepository)
         {
             this.blogPostRepository = blogPostRepository;
             this._mapper = mapper;
             this._logger = logger;
+            this.categoryRepository = categoryRepository;
         }
 
         [HttpGet("GetAllBlogPosts")]
@@ -60,8 +62,16 @@ namespace CodePulse.API.Controllers
                 _logger.LogWarning("Request is null in AddBlogPost.");
                 return BadRequest("Blog post cannot be null.");
             }
-
             var blogPostDomain = _mapper.Map<BlogPost>(request);
+            blogPostDomain.Categories = new List<Category>();
+            foreach (var categoryGuid in request.Categories)
+            {
+                var existingCategory = await categoryRepository.GetCategoryByIdAsync(categoryGuid);
+                if (existingCategory is not null)
+                {
+                    blogPostDomain.Categories.Add(existingCategory);
+                }
+            }
             var addedBlogPost = await blogPostRepository.AddBlogPostAsync(blogPostDomain);
             var blogPostDto = _mapper.Map<BlogPostDto>(addedBlogPost);
             _logger.LogInformation("Blog post added successfully: {@BlogPost}", blogPostDto);
@@ -79,6 +89,15 @@ namespace CodePulse.API.Controllers
             }
 
             var blogPostDomain = _mapper.Map<BlogPost>(request);
+            blogPostDomain.Categories = new List<Category>();
+            foreach (var categoryGuid in request.Categories)
+            {
+                var existingCategory = await categoryRepository.GetCategoryByIdAsync(categoryGuid);
+                if (existingCategory is not null)
+                {
+                    blogPostDomain.Categories.Add(existingCategory);
+                }
+            }
             blogPostDomain.Id = id;
             var updatedBlogPost = await blogPostRepository.UpdateBlogPostAsync(blogPostDomain);
             if (updatedBlogPost is null)
