@@ -122,6 +122,15 @@ namespace CodePulse.API.Controllers
             _logger.LogInformation("Blog post deleted successfully: {@BlogPost}", deletedBlogPost);
             return Ok(_mapper.Map<BlogPostDto>(deletedBlogPost));
         }
-
+        [HttpGet("GetBlogPostByUrlHandle/{urlHandle}")]
+        public async Task<IActionResult> GetBlogPostByUrlHandle([FromRoute] string urlHandle)
+        {
+            _logger.LogInformation("GetBlogsByUrl action invoked with URL: {Url}", urlHandle);
+            var blogPostDomain = await blogPostRepository.GetBlogPostByUrlHandleAsync(urlHandle);
+            if (blogPostDomain is null)
+                return NotFound();
+            _logger.LogInformation($"Blog post retrieved: {blogPostDomain}");
+            return Ok(_mapper.Map<BlogPostDto>(blogPostDomain));
+        }
     }
 }
