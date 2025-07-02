@@ -34,6 +34,16 @@ namespace CodePulse.API.Controllers
             }
             return BadRequest(ModelState);
         }
+        [HttpGet("GetAllBlogImages")]
+        public async Task<IActionResult> GetAllBlogImages()
+        {
+            var blogImagesDomain = await blogImageRepository.GetBlogImagesAsync();
+            if (blogImagesDomain == null)
+            {
+                return NotFound();
+            }
+            return Ok(blogImagesDomain);
+        }
         private void ValidateFileUpload(IFormFile file) {
             var allowedExtensions = new string[] { ".jpg", ".png", ".jpng" };
             if (!allowedExtensions.Contains(Path.GetExtension(file.FileName).ToLower()))
