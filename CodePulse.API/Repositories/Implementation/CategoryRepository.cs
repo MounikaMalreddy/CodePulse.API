@@ -17,12 +17,40 @@ namespace CodePulse.API.Repositories.Implementation
             this._logger = logger;
         }
 
-        public async Task<IEnumerable<Category>> GetAllCategoriesAsync()
+        public async Task<IEnumerable<Category>> GetAllCategoriesAsync(string? filterQuery = null,
+            string? sortBy = null,
+            string? sortDirection = "asc",
+            int? pageNumber = 1, int? pageSize = 100)
         {
             _logger.LogInformation("📦 [Repository] GetAllCategoriesAsync invoked.");
-            var result = await codePulseDbContext.Category.ToListAsync();
-            _logger.LogInformation("📦 [Repository] Retrieved {Count} categories.", result.Count);
-            return result;
+            //quering
+            var categories = codePulseDbContext.Category.AsQueryable();
+            //filtering
+            if (!string.IsNullOrWhiteSpace(filterQuery) && filterQuery != "undefined")
+            {
+                _logger.LogInformation("📦 [Repository] Applying filter: {FilterQuery}", filterQuery);
+                categories = categories.Where(x => x.Name.Contains(filterQuery));
+            }
+            //sorting
+            if (!string.IsNullOrWhiteSpace(sortBy) && sortBy != "undefined")
+            {
+                if (string.Equals(sortBy, "Name", StringComparison.OrdinalIgnoreCase))
+                {
+                    //var isAscending = sortDirection?.ToLower() == "asc" ? true : false;
+                    var isAsc = string.Equals(sortDirection, "asc", StringComparison.OrdinalIgnoreCase) ? true : false;
+                    categories = isAsc ? categories.OrderBy(x => x.Name) : categories.OrderByDescending(x => x.Name);
+                }
+                if (string.Equals(sortBy, "URL", StringComparison.OrdinalIgnoreCase))
+                {
+                    //var isAscending = sortDirection?.ToLower() == "asc" ? true : false;
+                    var isAsc = string.Equals(sortDirection, "asc", StringComparison.OrdinalIgnoreCase) ? true : false;
+                    categories = isAsc ? categories.OrderBy(x => x.UrlHandle) : categories.OrderByDescending(x => x.UrlHandle);
+                }
+            }
+            //pagination
+            var skipResults = (pageNumber - 1) * pageSize;
+            _logger.LogInformation($"📦 [Repository] Retrieved categories.");
+            return await categories.Skip(skipResults ?? 0).Take(pageSize ?? 100).ToListAsync();
         }
 
         public async Task<Category?> GetCategoryByIdAsync(Guid id)
@@ -85,5 +113,10 @@ namespace CodePulse.API.Repositories.Implementation
             return existingCategory;
         }
 
+        public async Task<int> CountCategoriesAsync()
+        {
+            _logger.LogInformation("CountCategoriesAsync Invoked");
+            return await codePulseDbContext.Category.CountAsync();
+        }
     }
 }

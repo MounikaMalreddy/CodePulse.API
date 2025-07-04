@@ -25,11 +25,13 @@ namespace CodePulse.API.Controllers
         }
 
         [HttpGet("GetAllCategories")]
-        public async Task<IActionResult> GetAllCategories()
+        public async Task<IActionResult> GetAllCategories(string? filterQuery, string? sortBy, string? sortDirection,
+            int? pageNumber, int? pageSize)
         {
             _logger.LogInformation("➡️ [GetAllCategories] Action Invoked");
 
-            var categoryDomain = await categoryRepository.GetAllCategoriesAsync();
+            var categoryDomain = await categoryRepository.GetAllCategoriesAsync(filterQuery, sortBy, sortDirection,
+                pageNumber, pageSize);
 
             if (categoryDomain == null || !categoryDomain.Any())
             {
@@ -123,6 +125,14 @@ namespace CodePulse.API.Controllers
             _logger.LogInformation("✅ [DeleteCategory] Successfully deleted category: {Response}", JsonSerializer.Serialize(deletedCategory));
             return Ok(_mapper.Map<CategoryDto>(deletedCategory));
         }
-
+        [HttpGet("GetCategoriesCount")]
+        public async Task<IActionResult> GetCategoriesCount()
+        {
+            _logger.LogInformation("GetCategoriesCount Invoked");
+            var response = await categoryRepository.CountCategoriesAsync();
+            if (response != 0)
+                return Ok(response);
+            return NotFound(response);
+        }
     }
 }
